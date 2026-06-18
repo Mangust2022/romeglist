@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lista de Compras - Día del Padre</title>
+
+<style>
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+    font-family:Arial, sans-serif;
+}
+
+body{
+    background:#f4f6f9;
+    padding:20px;
+}
+
+.container{
+    max-width:1200px;
+    margin:auto;
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 4px 15px rgba(0,0,0,.1);
+}
+
+h1{
+    text-align:center;
+    color:#1e88e5;
+    margin-bottom:20px;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th{
+    background:#1e88e5;
+    color:white;
+    padding:12px;
+}
+
+td{
+    border:1px solid #ddd;
+    padding:8px;
+}
+
+input{
+    width:100%;
+    border:none;
+    outline:none;
+    padding:8px;
+}
+
+input:focus{
+    background:#eef6ff;
+}
+
+.botones{
+    margin-top:20px;
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+}
+
+button{
+    border:none;
+    padding:10px 15px;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.btn-agregar{
+    background:#28a745;
+    color:white;
+}
+
+.btn-limpiar{
+    background:#dc3545;
+    color:white;
+}
+
+.btn-eliminar{
+    background:#dc3545;
+    color:white;
+    padding:8px 12px;
+}
+
+button:hover{
+    opacity:.9;
+}
+
+.total{
+    text-align:right;
+    margin-top:20px;
+    font-size:28px;
+    color:#28a745;
+    font-weight:bold;
+}
+
+@media(max-width:768px){
+    table{
+        display:block;
+        overflow-x:auto;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<h1>🍖 Lista de Compras Día del Padre</h1>
+
+<table id="tabla">
+    <thead>
+        <tr>
+            <th>Insumo</th>
+            <th>Cantidad</th>
+            <th>Precio Unitario</th>
+            <th>Subtotal</th>
+            <th>¿Cómo se utilizará?</th>
+            <th>Eliminar</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<div class="botones">
+    <button class="btn-agregar" onclick="agregarFila()">
+        ➕ Agregar Insumo
+    </button>
+
+    <button class="btn-limpiar" onclick="limpiarTodo()">
+        🗑 Limpiar Todo
+    </button>
+</div>
+
+<div class="total">
+    Total General: $<span id="totalGeneral">0.00</span>
+</div>
+
+</div>
+
+<script>
+
+function guardarDatos(){
+
+    let datos = [];
+
+    document.querySelectorAll("#tabla tbody tr")
+    .forEach(fila => {
+
+        datos.push({
+            insumo: fila.cells[0].querySelector("input").value,
+            cantidad: fila.cells[1].querySelector("input").value,
+            precio: fila.cells[2].querySelector("input").value,
+            uso: fila.cells[4].querySelector("input").value
+        });
+
+    });
+
+    localStorage.setItem(
+        "comprasDiaPadre",
+        JSON.stringify(datos)
+    );
+
+}
+
+function calcular(){
+
+    let totalGeneral = 0;
+
+    document.querySelectorAll("#tabla tbody tr")
+    .forEach(fila => {
+
+        let cantidad = parseFloat(
+            fila.cells[1].querySelector("input").value
+        ) || 0;
+
+        let precio = parseFloat(
+            fila.cells[2].querySelector("input").value
+        ) || 0;
+
+        let subtotal = cantidad * precio;
+
+        fila.querySelector(".subtotal").textContent =
+            "$" + subtotal.toFixed(2);
+
+        totalGeneral += subtotal;
+
+    });
+
+    document.getElementById("totalGeneral").textContent =
+        totalGeneral.toFixed(2);
+
+    guardarDatos();
+
+}
+
+function agregarFila(datos = {}){
+
+    const tbody =
+        document.querySelector("#tabla tbody");
+
+    const fila =
+        document.createElement("tr");
+
+    fila.innerHTML = `
+
+        <td>
+            <input
+                type="text"
+                placeholder="Nombre del insumo"
+                value="${datos.insumo || ''}"
+                oninput="guardarDatos()">
+        </td>
+
+        <td>
+            <input
+                type="number"
+                min="0"
+                value="${datos.cantidad || 1}"
+                oninput="calcular()">
+        </td>
+
+        <td>
+            <input
+                type="number"
+                min="0"
+                step="0.01"
+                value="${datos.precio || 0}"
+                oninput="calcular()">
+        </td>
+
+        <td class="subtotal">
+            $0.00
+        </td>
+
+        <td>
+            <input
+                type="text"
+                placeholder="Uso del insumo"
+                value="${datos.uso || ''}"
+                oninput="guardarDatos()">
+        </td>
+
+        <td style="text-align:center;">
+            <button
+                class="btn-eliminar"
+                onclick="eliminarFila(this)">
+                🗑️
+            </button>
+        </td>
+
+    `;
+
+    tbody.appendChild(fila);
+
+    calcular();
+
+}
+
+function eliminarFila(boton){
+
+    if(confirm("¿Deseas eliminar este registro?")){
+
+        boton.closest("tr").remove();
+
+        guardarDatos();
+        calcular();
+
+    }
+
+}
+
+function limpiarTodo(){
+
+    if(confirm("¿Deseas eliminar todos los registros?")){
+
+        localStorage.removeItem("comprasDiaPadre");
+
+        document.querySelector("#tabla tbody").innerHTML = "";
+
+        document.getElementById("totalGeneral").textContent = "0.00";
+
+    }
+
+}
+
+function cargarDatos(){
+
+    const datosGuardados =
+        localStorage.getItem("comprasDiaPadre");
+
+    const tbody =
+        document.querySelector("#tabla tbody");
+
+    tbody.innerHTML = "";
+
+    if(datosGuardados){
+
+        JSON.parse(datosGuardados)
+        .forEach(item => {
+
+            agregarFila(item);
+
+        });
+
+    }else{
+
+        agregarFila({
+            insumo:"Carne para asar",
+            cantidad:5,
+            precio:180,
+            uso:"Platillo principal"
+        });
+
+        agregarFila({
+            insumo:"Tortillas",
+            cantidad:3,
+            precio:30,
+            uso:"Acompañamiento"
+        });
+
+        agregarFila({
+            insumo:"Refrescos",
+            cantidad:4,
+            precio:45,
+            uso:"Bebidas"
+        });
+
+    }
+
+    calcular();
+
+}
+
+window.onload = cargarDatos;
+
+</script>
+
+</body>
+</html>
